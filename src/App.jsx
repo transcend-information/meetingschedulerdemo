@@ -2,23 +2,23 @@ import { useState, useMemo } from "react";
 
 const MEETINGS = [
   {
-    id: "china", label: "China Team Monthly", color: "#D85A30", bg: "#FAECE7",
+    id: "china", label: "China Team Monthly Meeting", color: "#D85A30", bg: "#FAECE7",
     members: ["CY Hung (HK)","Michael Mei (SH)","Jiesy Yan (SZ)","Elmer Chow (BJ)","Teri Chang (USA)"]
   },
   {
-    id: "jpkr", label: "JP / KR Team Monthly", color: "#185FA5", bg: "#E6F1FB",
+    id: "jpkr", label: "JP / KR Team Monthly Meeting", color: "#185FA5", bg: "#E6F1FB",
     members: ["Taikin Lin (JP)","DH Shim (KR)","Teri Chang (USA)"]
   },
   {
-    id: "europe", label: "Europe Team Monthly", color: "#3B6D11", bg: "#EAF3DE",
+    id: "europe", label: "Europe Team Monthly Meeting", color: "#3B6D11", bg: "#EAF3DE",
     members: ["George Linardatos (GM)","Yoann Tellier (NL)","James Grant (UK)","Teri Chang (USA)"]
   },
   {
-    id: "usa", label: "USA Team Monthly", color: "#533AB7", bg: "#EEEDFE",
+    id: "usa", label: "USA Team Monthly Meeting", color: "#533AB7", bg: "#EEEDFE",
     members: ["Teri Chang","Clarence Chan","Mike Ventura","Andrew Hinkle"]
   },
   {
-    id: "tw", label: "TW Team Monthly", color: "#0F6E56", bg: "#E1F5EE",
+    id: "tw", label: "TW Team Monthly Meeting", color: "#0F6E56", bg: "#E1F5EE",
     members: ["Michael (SD1)","Sean (SD2)","Oliver (SD3)","Fenny (SD4)","Blue (SD5)","Paul (VP)","Teri Chang (USA)"]
   }
 ];
@@ -167,22 +167,23 @@ export default function App() {
         <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--color-text-secondary)" }}>5 場月會 · 共 {Object.values(initAvailability()).length} 位成員</p>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem" }}>
-        <button style={tabStyle("availability")} onClick={() => setTab("availability")}>填寫有空時段</button>
-        <button style={tabStyle("schedule")} onClick={() => setTab("schedule")}>安排會議時間</button>
-        <button style={tabStyle("result")} onClick={() => setTab("result")}>本月會議總覽</button>
+        <button style={tabStyle("availability")} onClick={() => setTab("availability")}>[GM] 填寫有空時段</button>
+        <button style={tabStyle("schedule")} onClick={() => setTab("schedule")}>[FAD] 安排會議時間</button>
+        <button style={tabStyle("result")} onClick={() => setTab("result")}>[FAD] 本月會議總覽</button>
       </div>
 
       {/* ── TAB 1: Availability ── */}
       {tab === "availability" && (
         <>
           {/* Meeting selector */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: "1rem" }}>
-            {MEETINGS.map(mt => (
-              <button key={mt.id} onClick={() => { setActiveMeeting(mt.id); setActiveMember(mt.members[0]); setSelectedDay(null); }}
-                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 20, border: "0.5px solid", borderColor: activeMeeting === mt.id ? mt.color : "var(--color-border-tertiary)", background: activeMeeting === mt.id ? mt.bg : "transparent", color: activeMeeting === mt.id ? mt.color : "var(--color-text-secondary)", cursor: "pointer" }}>
-                {mt.label}
-              </button>
-            ))}
+          <div style={{ marginBottom: "1rem" }}>
+            <select value={activeMeeting}
+              onChange={e => { setActiveMeeting(e.target.value); setActiveMember(MEETINGS.find(m => m.id === e.target.value).members[0]); setSelectedDay(null); }}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1.5px solid ${meeting.color}`, background: meeting.bg, color: meeting.color, fontSize: 13, fontWeight: 500, cursor: "pointer", outline: "none" }}>
+              {MEETINGS.map(mt => (
+                <option key={mt.id} value={mt.id}>{mt.label}（{mt.members.length} 人）</option>
+              ))}
+            </select>
           </div>
 
           {/* Member selector */}
