@@ -182,7 +182,18 @@ export default function App() {
 
   const allAvail = (meetingId, day, slotId) => {
     const mt = MEETINGS.find(m => m.id === meetingId);
-    return countAvail(meetingId, day, slotId) === mt.members.length;
+    const key = `${day}-${slotId}`;
+    
+    // 检查该团队所有成员是否都有空
+    const allMembersAvail = mt.members.every(mb => availability[mb]?.[key]);
+    
+    // China, JPKR, Europe, TW 团队需要额外检查 Teri Chang 是否有空
+    if (["China", "JPKR", "Europe", "TW"].includes(meetingId)) {
+      const teriAvail = availability["Teri Chang"]?.[key];
+      return allMembersAvail && teriAvail;
+    }
+    
+    return allMembersAvail;
   };
 
   // Best slots per meeting: all members free
@@ -377,7 +388,24 @@ export default function App() {
                   {!sched && (
                     <>
                       <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 8px" }}>
-                        {best.length === 0 ? "尚無全員有空的時段，請先填寫有空時段" : `全員有空的時段（${best.length} 個）：`}
+                        {best.length === 0 ? (() => {
+                          // 检查哪些成员未填写有空时段
+                          const membersToCheck = [...mt.members];
+                          // China, JPKR, Europe, TW 团队需要包含 Teri Chang
+                          if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
+                            membersToCheck.push("Teri Chang");
+                          }
+                          
+                          const notFilledMembers = membersToCheck.filter(mb => {
+                            const memberAvail = availability[mb] || {};
+                            return Object.values(memberAvail).every(v => !v);
+                          });
+                          
+                          if (notFilledMembers.length > 0) {
+                            return `${notFilledMembers.join(", ")} 未填寫有空時段`;
+                          }
+                          return "所有人均已填寫, 無有空時段";
+                        })() : `全員有空的時段（${best.length} 個）：`}
                       </p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {best.map(({ day, slotId }) => {
