@@ -2,37 +2,123 @@ import { useState, useMemo } from "react";
 
 const MEETINGS = [
   {
-    id: "china", label: "China Team Monthly Meeting", color: "#D85A30", bg: "#FAECE7",
-    members: ["CY Hung (HK)","Michael Mei (SH)","Jiesy Yan (SZ)","Elmer Chow (BJ)","Teri Chang (USA)"]
+    id: "China", label: "China Team Monthly Meeting", color: "#D85A30", bg: "#FAECE7",
+    members: ["CY Hung (HK)","Michael Mei (SH)","Yan Zhang(SH)","Jiesy Yan (SZ)","Elmer Chow (BJ)"]
   },
   {
-    id: "jpkr", label: "JP / KR Team Monthly Meeting", color: "#185FA5", bg: "#E6F1FB",
-    members: ["Taikin Lin (JP)","DH Shim (KR)","Teri Chang (USA)"]
+    id: "JPKR", label: "JP / KR Team Monthly Meeting", color: "#185FA5", bg: "#E6F1FB",
+    members: ["Taikin Lin (JP)","DH Shim (KR)"]
   },
   {
-    id: "europe", label: "Europe Team Monthly Meeting", color: "#3B6D11", bg: "#EAF3DE",
-    members: ["George Linardatos (GM)","Yoann Tellier (NL)","James Grant (UK)","Teri Chang (USA)"]
+    id: "Europe", label: "Europe Team Monthly Meeting", color: "#3B6D11", bg: "#EAF3DE",
+    members: ["George Linardatos (GM)","Yoann Tellier (NL)","James Grant (UK)"]
   },
   {
-    id: "usa", label: "USA Team Monthly Meeting", color: "#533AB7", bg: "#EEEDFE",
+    id: "USA", label: "USA Team Monthly Meeting", color: "#533AB7", bg: "#EEEDFE",
     members: ["Teri Chang","Mike Ventura"]
   },
   {
-    id: "tw", label: "TW Team Monthly Meeting", color: "#0F6E56", bg: "#E1F5EE",
-    members: ["Michael (SD1)","Sean (SD2)","Oliver (SD3)","Fenny (SD4)","Blue (SD5)","Paul (VP)","Teri Chang (USA)"]
+    id: "TW", label: "TW Team Monthly Meeting", color: "#0F6E56", bg: "#E1F5EE",
+    members: ["Michael (SD1)","Sean (SD2)","Oliver (SD3)","Fenny (SD4)","Blue (SD5)","Eddie Yang(TEC)","Paul (VP)"]
   }
 ];
 
 const SLOTS = [
   { id: "s1", label: "8–10 AM" },
   { id: "s2", label: "10–12 PM" },
-  { id: "s3", label: "1–3 PM" },
-  { id: "s4", label: "3–5 PM" }
+  { id: "s3", label: "13–15 PM" },
+  { id: "s4", label: "15–17 PM" }
 ];
 
+// 台灣國定假日 2026年 (格式: "月-日")
+const TW_HOLIDAYS_2026 = {
+  3: [28, 29], // 3/28-29 和平紀念日補假
+  4: [3, 4, 5, 6], // 4/3-6 清明連假
+  5: [1], // 5/1 勞動節
+  6: [19] // 6/19 端午節
+};
+
+// 美國國定假日 2026年
+const USA_HOLIDAYS_2026 = {
+  3: [], // 3月無聯邦假日
+  4: [], // 4月無聯邦假日
+  5: [25], // 5/25 Memorial Day (陣亡將士紀念日)
+  6: [19] // 6/19 Juneteenth (六月節)
+};
+
+// 中國國定假日 2026年
+const CHINA_HOLIDAYS_2026 = {
+  3: [], // 3月無法定假日
+  4: [4, 5, 6], // 4/4-6 清明節假期
+  5: [1, 2, 3, 4, 5], // 5/1-5 勞動節假期（5/9週六補班）
+  6: [19, 20, 21] // 6/19-21 端午節假期
+};
+
+// 日本與韓國國定假日 2026年
+const JPKR_HOLIDAYS_2026 = {
+  3: [1, 20], // 3/1 韓國三一節, 3/20 日本春分の日
+  4: [5, 29], // 4/5 韓國佛誕日, 4/29 日本昭和の日
+  5: [3, 4, 5, 6], // 5/3-6 日本黃金週（憲法紀念日、綠之日、兒童節、補假）、5/5 韓國兒童節
+  6: [6] // 6/6 韓國顯忠日
+};
+
+// 歐洲國定假日 2026年（德國、英國、荷蘭）
+const EUROPE_HOLIDAYS_2026 = {
+  3: [], // 3月無假日
+  4: [3, 6, 27], // 4/3 Good Friday, 4/6 Easter Monday, 4/27 荷蘭國王節
+  5: [1, 4, 5, 14, 25], // 5/1 德國勞動節, 5/4 英國五月初銀行假日, 5/5 荷蘭解放日, 5/14 耶穌升天節(DE/NL), 5/25 聖靈降臨節(DE/NL)/春季銀行假日(UK)
+  6: [] // 6月無假日
+};
+
+function isTWHoliday(year, month, day) {
+  if (year !== 2026) return false;
+  const monthHolidays = TW_HOLIDAYS_2026[month + 1]; // month is 0-based
+  return monthHolidays ? monthHolidays.includes(day) : false;
+}
+
+function isUSAHoliday(year, month, day) {
+  if (year !== 2026) return false;
+  const monthHolidays = USA_HOLIDAYS_2026[month + 1]; // month is 0-based
+  return monthHolidays ? monthHolidays.includes(day) : false;
+}
+
+function isChinaHoliday(year, month, day) {
+  if (year !== 2026) return false;
+  const monthHolidays = CHINA_HOLIDAYS_2026[month + 1]; // month is 0-based
+  return monthHolidays ? monthHolidays.includes(day) : false;
+}
+
+function isJPKRHoliday(year, month, day) {
+  if (year !== 2026) return false;
+  const monthHolidays = JPKR_HOLIDAYS_2026[month + 1]; // month is 0-based
+  return monthHolidays ? monthHolidays.includes(day) : false;
+}
+
+function isEuropeHoliday(year, month, day) {
+  if (year !== 2026) return false;
+  const monthHolidays = EUROPE_HOLIDAYS_2026[month + 1]; // month is 0-based
+  return monthHolidays ? monthHolidays.includes(day) : false;
+}
+
+// 根據會議ID判斷該日是否為假日
+function isHolidayForMeeting(meetingId, year, month, day) {
+  if (meetingId === "TW") {
+    return isTWHoliday(year, month, day);
+  } else if (meetingId === "USA") {
+    return isUSAHoliday(year, month, day);
+  } else if (meetingId === "China") {
+    return isChinaHoliday(year, month, day);
+  } else if (meetingId === "JPKR") {
+    return isJPKRHoliday(year, month, day);
+  } else if (meetingId === "Europe") {
+    return isEuropeHoliday(year, month, day);
+  }
+  return false; // 其他團隊沒有特定假日限制
+}
+
 const today = new Date();
-const YEAR = today.getFullYear();
-const MONTH = today.getMonth();
+const CURRENT_YEAR = today.getFullYear();
+const CURRENT_MONTH = today.getMonth();
 
 function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 function getFirstMonday(y, m) {
@@ -43,10 +129,6 @@ function getMondayOffset(y, m) {
   const day1 = new Date(y, m, 1).getDay(); // 0=Sun
   return day1 === 0 ? 6 : day1 - 1; // offset so Mon=0
 }
-
-const MONTH_NAME = new Date(YEAR, MONTH).toLocaleString("zh-TW", { month: "long", year: "numeric" });
-const DAYS_IN_MONTH = getDaysInMonth(YEAR, MONTH);
-const MON_OFFSET = getMondayOffset(YEAR, MONTH);
 
 function initScheduled() {
   // { meetingId: { day, slotId } | null }
@@ -63,6 +145,7 @@ function initAvailability() {
 }
 
 export default function App() {
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH); // 0-based month index
   const [tab, setTab] = useState("availability"); // availability | schedule | result
   const [activeMeeting, setActiveMeeting] = useState(MEETINGS[0].id);
   const [activeMember, setActiveMember] = useState(MEETINGS[0].members[0]);
@@ -72,6 +155,12 @@ export default function App() {
   const [schedDay, setSchedDay] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [dragVal, setDragVal] = useState(true);
+
+  const YEAR = CURRENT_YEAR;
+  const MONTH = selectedMonth;
+  const MONTH_NAME = new Date(YEAR, MONTH).toLocaleString("zh-TW", { month: "long", year: "numeric" });
+  const DAYS_IN_MONTH = getDaysInMonth(YEAR, MONTH);
+  const MON_OFFSET = getMondayOffset(YEAR, MONTH);
 
   const meeting = MEETINGS.find(m => m.id === activeMeeting);
 
@@ -103,7 +192,8 @@ export default function App() {
       res[mt.id] = [];
       for (let d = 1; d <= DAYS_IN_MONTH; d++) {
         const dow = new Date(YEAR, MONTH, d).getDay();
-        if (dow === 0 || dow === 6) continue;
+        const isHoliday = isHolidayForMeeting(mt.id, YEAR, MONTH, d);
+        if (dow === 0 || dow === 6 || isHoliday) continue; // 排除週末和國定假日
         SLOTS.forEach(sl => {
           if (allAvail(mt.id, d, sl.id)) res[mt.id].push({ day: d, slotId: sl.id });
         });
@@ -132,7 +222,7 @@ export default function App() {
 
   const DOW_LABELS = ["一","二","三","四","五","六","日"];
 
-  const renderCalendarGrid = (onDayClick, dayCell) => (
+  const renderCalendarGrid = (onDayClick, dayCell, meetingId = null) => (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, marginBottom: 3 }}>
         {DOW_LABELS.map(d => (
@@ -145,7 +235,8 @@ export default function App() {
           const d = i + 1;
           const dow = new Date(YEAR, MONTH, d).getDay();
           const isWeekend = dow === 0 || dow === 6;
-          return dayCell(d, dow, isWeekend);
+          const isHoliday = meetingId ? isHolidayForMeeting(meetingId, YEAR, MONTH, d) : false;
+          return dayCell(d, dow, isWeekend, isHoliday);
         })}
       </div>
     </div>
@@ -163,8 +254,18 @@ export default function App() {
     <div style={{ fontFamily: "var(--font-sans)", padding: "1rem 1.25rem", maxWidth: 820, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: "1.25rem" }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>{MONTH_NAME} 會議排程</h2>
-        <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--color-text-secondary)" }}>5 場月會 · 共 {Object.values(initAvailability()).length} 位成員</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <select 
+            value={selectedMonth} 
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
+            <option value={2}>2026年3月</option>
+            <option value={3}>2026年4月</option>
+            <option value={4}>2026年5月</option>
+            <option value={5}>2026年6月</option>
+          </select>
+          <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>會議排程</span>
+        </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem" }}>
         <button style={tabStyle("availability")} onClick={() => setTab("availability")}>[GM] 填寫有空時段</button>
@@ -205,17 +306,19 @@ export default function App() {
             <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--color-text-secondary)" }}>
               選擇日期 → 填寫 <strong style={{ color: meeting.color }}>{activeMember}</strong> 有空的時段
             </p>
-            {renderCalendarGrid(null, (d, dow, isWeekend) => {
+            {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
               const hasAny = SLOTS.some(sl => availability[activeMember]?.[`${d}-${sl.id}`]);
               const isSel = selectedDay === d;
+              const isDisabled = isWeekend || isHoliday;
               return (
-                <button key={d} disabled={isWeekend} onClick={() => setSelectedDay(isSel ? null : d)}
-                  style={{ borderRadius: 8, padding: "7px 2px 5px", background: isSel ? meeting.bg : isWeekend ? "transparent" : "var(--color-background-primary)", border: "0.5px solid", borderColor: isSel ? meeting.color : "var(--color-border-tertiary)", cursor: isWeekend ? "default" : "pointer", opacity: isWeekend ? 0.2 : 1, textAlign: "center", outline: isSel ? `2px solid ${meeting.color}` : "none" }}>
-                  <div style={{ fontSize: 12, color: isSel ? meeting.color : "var(--color-text-primary)", fontWeight: isSel ? 500 : 400 }}>{d}</div>
+                <button key={d} disabled={isDisabled} onClick={() => setSelectedDay(isSel ? null : d)}
+                  style={{ borderRadius: 8, padding: "7px 2px 5px", background: isSel ? meeting.bg : isDisabled ? "transparent" : "var(--color-background-primary)", border: "0.5px solid", borderColor: isSel ? meeting.color : isHoliday ? "#F59E0B" : "var(--color-border-tertiary)", cursor: isDisabled ? "default" : "pointer", opacity: isDisabled ? 0.3 : 1, textAlign: "center", outline: isSel ? `2px solid ${meeting.color}` : "none", position: "relative" }}>
+                  <div style={{ fontSize: 12, color: isSel ? meeting.color : isHoliday ? "#F59E0B" : "var(--color-text-primary)", fontWeight: isSel ? 500 : 400 }}>{d}</div>
                   {hasAny && <div style={{ width: 5, height: 5, borderRadius: "50%", background: meeting.color, margin: "2px auto 0" }} />}
+                  {isHoliday && !isWeekend && <div style={{ fontSize: 8, color: "#F59E0B", marginTop: 1 }}>休</div>}
                 </button>
               );
-            })}
+            }, activeMeeting)}
           </div>
 
           {/* Slot picker */}
@@ -312,16 +415,42 @@ export default function App() {
         <>
           {/* Calendar with meetings marked */}
           <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1.25rem" }}>
-            {renderCalendarGrid(null, (d, dow, isWeekend) => {
+            {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
               const dayMeetings = MEETINGS.filter(mt => scheduled[mt.id]?.day === d);
+              // 檢查當天是否為任何團隊的假日
+              const isTWHol = isTWHoliday(YEAR, MONTH, d);
+              const isUSAHol = isUSAHoliday(YEAR, MONTH, d);
+              const isCNHol = isChinaHoliday(YEAR, MONTH, d);
+              const isJPKRHol = isJPKRHoliday(YEAR, MONTH, d);
+              const isEUHol = isEuropeHoliday(YEAR, MONTH, d);
+              const hasAnyHoliday = isTWHol || isUSAHol || isCNHol || isJPKRHol || isEUHol;
+              const isDisabled = isWeekend || hasAnyHoliday;
               return (
-                <div key={d} style={{ borderRadius: 8, padding: "5px 3px", background: dayMeetings.length > 0 ? "var(--color-background-primary)" : "transparent", border: `0.5px solid ${dayMeetings.length > 0 ? "var(--color-border-secondary)" : "transparent"}`, minHeight: 52, opacity: isWeekend ? 0.25 : 1 }}>
-                  <div style={{ fontSize: 11, textAlign: "center", color: "var(--color-text-secondary)", marginBottom: 2 }}>{d}</div>
-                  {dayMeetings.map(mt => (
-                    <div key={mt.id} style={{ fontSize: 9, background: mt.bg, color: mt.color, borderRadius: 4, padding: "1px 4px", marginBottom: 2, lineHeight: 1.4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                      {SLOTS.find(s => s.id === scheduled[mt.id]?.slotId)?.label}
-                    </div>
-                  ))}
+                <div key={d} style={{ borderRadius: 8, padding: "5px 3px", background: dayMeetings.length > 0 ? "var(--color-background-primary)" : "transparent", border: `0.5px solid ${hasAnyHoliday && !isWeekend ? "#F59E0B" : dayMeetings.length > 0 ? "var(--color-border-secondary)" : "transparent"}`, minHeight: 52, opacity: isDisabled ? 0.25 : 1, position: "relative" }}>
+                  <div style={{ fontSize: 11, textAlign: "center", color: hasAnyHoliday ? "#F59E0B" : "var(--color-text-secondary)", marginBottom: 2 }}>
+                    {d}
+                    {hasAnyHoliday && !isWeekend && (
+                      <div style={{ fontSize: 8, color: "#F59E0B" }}>
+                        {isCNHol && "CN休"}
+                        {isCNHol && (isTWHol || isUSAHol || isJPKRHol || isEUHol) && "/"}
+                        {isEUHol && "EU休"}
+                        {isEUHol && (isJPKRHol || isTWHol || isUSAHol) && "/"}
+                        {isJPKRHol && "JPKR休"}
+                        {isJPKRHol && (isTWHol || isUSAHol) && "/"}
+                        {isTWHol && "TW休"}
+                        {isTWHol && isUSAHol && "/"}
+                        {isUSAHol && "US休"}
+                      </div>
+                    )}
+                  </div>
+                  {dayMeetings.map(mt => {
+                    const timeLabel = SLOTS.find(s => s.id === scheduled[mt.id]?.slotId)?.label.replace(/ (AM|PM)/, '').replace('–', '-');
+                    return (
+                      <div key={mt.id} style={{ fontSize: 9, background: mt.bg, color: mt.color, borderRadius: 4, padding: "1px 4px", marginBottom: 2, lineHeight: 1.4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                        {timeLabel} ({mt.id})
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -337,8 +466,10 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ width: 10, height: 10, borderRadius: "50%", background: mt.color, display: "inline-block" }} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>{mt.label}</div>
-                      <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>{mt.members.length} 位成員</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
+                        {mt.label}
+                        <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginLeft: 8, fontWeight: 400 }}>({mt.id})</span>
+                      </div>
                     </div>
                   </div>
                   {sched ? (
