@@ -15,7 +15,7 @@ const MEETINGS = [
   },
   {
     id: "usa", label: "USA Team Monthly Meeting", color: "#533AB7", bg: "#EEEDFE",
-    members: ["Teri Chang","Clarence Chan","Mike Ventura","Andrew Hinkle"]
+    members: ["Teri Chang","Mike Ventura"]
   },
   {
     id: "tw", label: "TW Team Monthly Meeting", color: "#0F6E56", bg: "#E1F5EE",
