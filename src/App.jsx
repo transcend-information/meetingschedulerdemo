@@ -168,7 +168,7 @@ export default function App() {
 
   const meeting = activeMeeting ? MEETINGS.find(m => m.id === activeMeeting) : null;
 
-  // Load data from Firebase on mount and when month changes
+  // Load data from Firebase on mount, when month changes, or when visiting Tab 1
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -178,6 +178,10 @@ export default function App() {
         if (availDoc.exists()) {
           setAvailability(availDoc.data().data || initAvailability());
           setSavedMembers(new Set(availDoc.data().savedMembers || []));
+        } else {
+          // Reset to initial state if no data exists
+          setAvailability(initAvailability());
+          setSavedMembers(new Set());
         }
 
         // Load scheduled meetings
@@ -185,14 +189,19 @@ export default function App() {
         const schedDoc = await getDoc(schedDocRef);
         if (schedDoc.exists()) {
           setScheduled(schedDoc.data().data || initScheduled());
+        } else {
+          setScheduled(initScheduled());
         }
       } catch (error) {
         console.error("Error loading data from Firebase:", error);
       }
     };
 
-    loadData();
-  }, [YEAR, MONTH]);
+    // Only reload data when visiting availability tab or when month changes
+    if (tab === "availability" || tab === "schedule" || tab === "result") {
+      loadData();
+    }
+  }, [YEAR, MONTH, tab]);
 
   const toggleSlot = async (member, day, slotId, force) => {
     // Prevent changes if member has saved their availability
