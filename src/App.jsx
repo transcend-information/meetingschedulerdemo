@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { db } from './firebase';
+import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 
 const MEETINGS = [
   {
@@ -166,20 +168,99 @@ export default function App() {
 
   const meeting = activeMeeting ? MEETINGS.find(m => m.id === activeMeeting) : null;
 
-  const toggleSlot = (member, day, slotId, force) => {
+  // Load data from Firebase on mount and when month changes
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load availability data
+        const availDocRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
+        const availDoc = await getDoc(availDocRef);
+        if (availDoc.exists()) {
+          setAvailability(availDoc.data().data || initAvailability());
+          setSavedMembers(new Set(availDoc.data().savedMembers || []));
+        }
+
+        // Load scheduled meetings
+        const schedDocRef = doc(db, 'scheduled', `${YEAR}_${MONTH}`);
+        const schedDoc = await getDoc(schedDocRef);
+        if (schedDoc.exists()) {
+          setScheduled(schedDoc.data().data || initScheduled());
+        }
+      } catch (error) {
+        console.error("Error loading data from Firebase:", error);
+      }
+    };
+
+    loadData();
+  }, [YEAR, MONTH]);
+
+  const toggleSlot = async (member, day, slotId, force) => {
     // Prevent changes if member has saved their availability
     if (savedMembers.has(member)) return;
     
     const key = `${day}-${slotId}`;
-    setAvailability(prev => {
-      const u = { ...prev[member] };
-      u[key] = force !== undefined ? force : !u[key];
-      return { ...prev, [member]: u };
-    });
+    const newAvailability = { ...availability };
+    const u = { ...newAvailability[member] };
+    u[key] = force !== undefined ? force : !u[key];
+    newAvailability[member] = u;
+    
+    setAvailability(newAvailability);
+    
+    // Auto-save to Firebase (without locking)
+    try {
+      const docRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
+      await setDoc(docRef, {
+        data: newAvailability,
+        savedMembers: Array.from(savedMembers),
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error auto-saving availability:", error);
+    }
   };
 
-  const saveAvailability = (member) => {
-    setSavedMembers(prev => new Set([...prev, member]));
+  const saveAvailability = async (member) => {
+    try {
+      const newSavedMembers = new Set([...savedMembers, member]);
+      setSavedMembers(newSavedMembers);
+      
+      // Save to Firebase
+      const docRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
+      await setDoc(docRef, {
+        data: availability,
+        savedMembers: Array.from(newSavedMembers),
+        lastUpdated: new Date().toISOString()
+      });
+      console.log("Availability saved to Firebase successfully");
+    } catch (error) {
+      console.error("Error saving availability to Firebase:", error);
+      alert("Failed to save data. Please try again.");
+    }
+  };
+
+  const resetAvailability = async (member) => {
+    if (!confirm(`Reset availability for ${member}? This will unlock their saved status and allow them to fill in availability again.`)) {
+      return;
+    }
+
+    try {
+      const newSavedMembers = new Set(savedMembers);
+      newSavedMembers.delete(member);
+      setSavedMembers(newSavedMembers);
+      
+      // Save to Firebase
+      const docRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
+      await setDoc(docRef, {
+        data: availability,
+        savedMembers: Array.from(newSavedMembers),
+        lastUpdated: new Date().toISOString()
+      });
+      console.log("Availability reset successfully for", member);
+      alert(`${member}'s availability has been unlocked. They can now fill in their availability again.`);
+    } catch (error) {
+      console.error("Error resetting availability:", error);
+      alert("Failed to reset availability. Please try again.");
+    }
   };
 
   // For a meeting + day + slot, count how many members are available
@@ -223,11 +304,40 @@ export default function App() {
   }, [availability]);
 
   // Schedule a meeting
-  const scheduleMeeting = (meetingId, day, slotId) => {
-    setScheduled(prev => ({ ...prev, [meetingId]: { day, slotId } }));
+  const scheduleMeeting = async (meetingId, day, slotId) => {
+    try {
+      const newScheduled = { ...scheduled, [meetingId]: { day, slotId } };
+      setScheduled(newScheduled);
+      
+      // Save to Firebase
+      const docRef = doc(db, 'scheduled', `${YEAR}_${MONTH}`);
+      await setDoc(docRef, {
+        data: newScheduled,
+        lastUpdated: new Date().toISOString()
+      });
+      console.log("Schedule saved to Firebase successfully");
+    } catch (error) {
+      console.error("Error saving schedule to Firebase:", error);
+      alert("Failed to save schedule. Please try again.");
+    }
   };
-  const unschedule = (meetingId) => {
-    setScheduled(prev => ({ ...prev, [meetingId]: null }));
+  
+  const unschedule = async (meetingId) => {
+    try {
+      const newScheduled = { ...scheduled, [meetingId]: null };
+      setScheduled(newScheduled);
+      
+      // Save to Firebase
+      const docRef = doc(db, 'scheduled', `${YEAR}_${MONTH}`);
+      await setDoc(docRef, {
+        data: newScheduled,
+        lastUpdated: new Date().toISOString()
+      });
+      console.log("Unscheduled successfully");
+    } catch (error) {
+      console.error("Error unscheduling in Firebase:", error);
+      alert("Failed to unschedule. Please try again.");
+    }
   };
 
   // Conflict detection
@@ -247,7 +357,7 @@ export default function App() {
       return;
     }
     
-    const password = prompt("Enter password to access FAD Zone:");
+    const password = prompt("Enter password(統編) to access FAD Zone:");
     if (password === "23446187") {
       setIsTab3Authenticated(true);
       setTab("schedule");
@@ -296,8 +406,8 @@ export default function App() {
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
-            <option value={3}>April 2026</option>
-            <option value={4}>May 2026</option>
+            <option value={4}>April 2026</option>
+            <option value={5}>May 2026</option>
           </select>
           <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
@@ -532,10 +642,27 @@ export default function App() {
                                 return Object.values(memberAvail).some(v => v);
                               });
                               return finished.length > 0 ? (
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                  {finished.map(mb => (
-                                    <span key={mb} style={{ fontSize: 11, color: "#10B981", background: "#D1FAE5", padding: "2px 8px", borderRadius: 8 }}>{mb}</span>
-                                  ))}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {finished.map(mb => {
+                                    const isSaved = savedMembers.has(mb);
+                                    return (
+                                      <div key={mb} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                                        <span style={{ fontSize: 11, color: "#10B981", background: "#D1FAE5", padding: "2px 8px", borderRadius: 8, flex: 1 }}>
+                                          {mb}
+                                        </span>
+                                        {isSaved ? (
+                                          <button 
+                                            onClick={() => resetAvailability(mb)}
+                                            style={{ fontSize: 14, padding: "2px 3px", borderRadius: 6, border: "0.5px solid #DC2626", background: "#FEE2E2", color: "#DC2626", cursor: "pointer", fontWeight: 600, lineHeight: "1", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "12px", height: "20px" }}
+                                            title={`Unlock ${mb}'s availability`}>
+                                            ✕
+                                          </button>
+                                        ) : (
+                                          <span style={{ fontSize: 14, color: "#10B981", padding: "2px 6px", minWidth: "24px", textAlign: "center" }}>✓</span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>—</span>
