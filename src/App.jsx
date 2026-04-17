@@ -30,44 +30,44 @@ const SLOTS = [
   { id: "s4", label: "15–17 PM" }
 ];
 
-// 台灣國定假日 2026年 (格式: "月-日")
+// Taiwan National Holidays 2026 (format: "month-day")
 const TW_HOLIDAYS_2026 = {
-  3: [28, 29], // 3/28-29 和平紀念日補假
-  4: [3, 4, 5, 6], // 4/3-6 清明連假
-  5: [1], // 5/1 勞動節
-  6: [19] // 6/19 端午節
+  3: [28, 29], // 3/28-29 Memorial Day (supplementary holiday)
+  4: [3, 4, 5, 6], // 4/3-6 Tomb Sweeping Day holiday
+  5: [1], // 5/1 Labor Day
+  6: [19] // 6/19 Dragon Boat Festival
 };
 
-// 美國國定假日 2026年
+// USA National Holidays 2026
 const USA_HOLIDAYS_2026 = {
-  3: [], // 3月無聯邦假日
-  4: [], // 4月無聯邦假日
-  5: [25], // 5/25 Memorial Day (陣亡將士紀念日)
-  6: [19] // 6/19 Juneteenth (六月節)
+  3: [], // No federal holidays in March
+  4: [], // No federal holidays in April
+  5: [25], // 5/25 Memorial Day
+  6: [19] // 6/19 Juneteenth
 };
 
-// 中國國定假日 2026年
+// China National Holidays 2026
 const CHINA_HOLIDAYS_2026 = {
-  3: [], // 3月無法定假日
-  4: [4, 5, 6], // 4/4-6 清明節假期
-  5: [1, 2, 3, 4, 5], // 5/1-5 勞動節假期（5/9週六補班）
-  6: [19, 20, 21] // 6/19-21 端午節假期
+  3: [], // No statutory holidays in March
+  4: [4, 5, 6], // 4/4-6 Tomb Sweeping Festival holiday
+  5: [1, 2, 3, 4, 5], // 5/1-5 Labor Day holiday (work on 5/9 Saturday)
+  6: [19, 20, 21] // 6/19-21 Dragon Boat Festival holiday
 };
 
-// 日本與韓國國定假日 2026年
+// Japan and Korea National Holidays 2026
 const JPKR_HOLIDAYS_2026 = {
-  3: [1, 20], // 3/1 韓國三一節, 3/20 日本春分の日
-  4: [5, 29], // 4/5 韓國佛誕日, 4/29 日本昭和の日
-  5: [3, 4, 5, 6], // 5/3-6 日本黃金週（憲法紀念日、綠之日、兒童節、補假）、5/5 韓國兒童節
-  6: [6] // 6/6 韓國顯忠日
+  3: [1, 20], // 3/1 Korea Independence Movement Day, 3/20 Japan Vernal Equinox Day
+  4: [5, 29], // 4/5 Korea Buddha's Birthday, 4/29 Japan Showa Day
+  5: [3, 4, 5, 6], // 5/3-6 Japan Golden Week (Constitution Day, Greenery Day, Children's Day, substitute holiday), 5/5 Korea Children's Day
+  6: [6] // 6/6 Korea Memorial Day
 };
 
-// 歐洲國定假日 2026年（德國、英國、荷蘭）
+// Europe National Holidays 2026 (Germany, UK, Netherlands)
 const EUROPE_HOLIDAYS_2026 = {
-  3: [], // 3月無假日
-  4: [3, 6, 27], // 4/3 Good Friday, 4/6 Easter Monday, 4/27 荷蘭國王節
-  5: [1, 4, 5, 14, 25], // 5/1 德國勞動節, 5/4 英國五月初銀行假日, 5/5 荷蘭解放日, 5/14 耶穌升天節(DE/NL), 5/25 聖靈降臨節(DE/NL)/春季銀行假日(UK)
-  6: [] // 6月無假日
+  3: [], // No holidays in March
+  4: [3, 6, 27], // 4/3 Good Friday, 4/6 Easter Monday, 4/27 Netherlands King's Day
+  5: [1, 4, 5, 14, 25], // 5/1 Germany Labor Day, 5/4 UK May Day, 5/5 Netherlands Liberation Day, 5/14 Ascension Day (DE/NL), 5/25 Whit Monday (DE/NL)/Spring Bank Holiday (UK)
+  6: [] // No holidays in June
 };
 
 function isTWHoliday(year, month, day) {
@@ -100,7 +100,7 @@ function isEuropeHoliday(year, month, day) {
   return monthHolidays ? monthHolidays.includes(day) : false;
 }
 
-// 根據會議ID判斷該日是否為假日
+// Check if the date is a holiday based on meeting ID
 function isHolidayForMeeting(meetingId, year, month, day) {
   if (meetingId === "TW") {
     return isTWHoliday(year, month, day);
@@ -113,7 +113,7 @@ function isHolidayForMeeting(meetingId, year, month, day) {
   } else if (meetingId === "Europe") {
     return isEuropeHoliday(year, month, day);
   }
-  return false; // 其他團隊沒有特定假日限制
+  return false; // Other teams have no specific holiday restrictions
 }
 
 const today = new Date();
@@ -147,14 +147,16 @@ function initAvailability() {
 export default function App() {
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH); // 0-based month index
   const [tab, setTab] = useState("availability"); // availability | schedule | result
-  const [activeMeeting, setActiveMeeting] = useState(MEETINGS[0].id);
-  const [activeMember, setActiveMember] = useState(MEETINGS[0].members[0]);
+  const [activeMeeting, setActiveMeeting] = useState(null); // null = no team selected
+  const [activeMember, setActiveMember] = useState(null);
   const [availability, setAvailability] = useState(initAvailability);
   const [scheduled, setScheduled] = useState(initScheduled);
   const [selectedDay, setSelectedDay] = useState(null);
   const [schedDay, setSchedDay] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [dragVal, setDragVal] = useState(true);
+  const [savedMembers, setSavedMembers] = useState(new Set()); // Track members who have saved their availability
+  const [isTab3Authenticated, setIsTab3Authenticated] = useState(false); // Track if Tab 3 (schedule) is authenticated
 
   const YEAR = CURRENT_YEAR;
   const MONTH = selectedMonth;
@@ -162,15 +164,22 @@ export default function App() {
   const DAYS_IN_MONTH = getDaysInMonth(YEAR, MONTH);
   const MON_OFFSET = getMondayOffset(YEAR, MONTH);
 
-  const meeting = MEETINGS.find(m => m.id === activeMeeting);
+  const meeting = activeMeeting ? MEETINGS.find(m => m.id === activeMeeting) : null;
 
   const toggleSlot = (member, day, slotId, force) => {
+    // Prevent changes if member has saved their availability
+    if (savedMembers.has(member)) return;
+    
     const key = `${day}-${slotId}`;
     setAvailability(prev => {
       const u = { ...prev[member] };
       u[key] = force !== undefined ? force : !u[key];
       return { ...prev, [member]: u };
     });
+  };
+
+  const saveAvailability = (member) => {
+    setSavedMembers(prev => new Set([...prev, member]));
   };
 
   // For a meeting + day + slot, count how many members are available
@@ -184,10 +193,10 @@ export default function App() {
     const mt = MEETINGS.find(m => m.id === meetingId);
     const key = `${day}-${slotId}`;
     
-    // 检查该团队所有成员是否都有空
+    // Check if all members of the team are available
     const allMembersAvail = mt.members.every(mb => availability[mb]?.[key]);
     
-    // China, JPKR, Europe, TW 团队需要额外检查 Teri Chang 是否有空
+    // China, JPKR, Europe, TW teams also need to check if Teri Chang is available
     if (["China", "JPKR", "Europe", "TW"].includes(meetingId)) {
       const teriAvail = availability["Teri Chang"]?.[key];
       return allMembersAvail && teriAvail;
@@ -204,7 +213,7 @@ export default function App() {
       for (let d = 1; d <= DAYS_IN_MONTH; d++) {
         const dow = new Date(YEAR, MONTH, d).getDay();
         const isHoliday = isHolidayForMeeting(mt.id, YEAR, MONTH, d);
-        if (dow === 0 || dow === 6 || isHoliday) continue; // 排除週末和國定假日
+        if (dow === 0 || dow === 6 || isHoliday) continue; // Exclude weekends and national holidays
         SLOTS.forEach(sl => {
           if (allAvail(mt.id, d, sl.id)) res[mt.id].push({ day: d, slotId: sl.id });
         });
@@ -231,7 +240,24 @@ export default function App() {
     );
   };
 
-  const DOW_LABELS = ["一","二","三","四","五","六","日"];
+  // Handle Tab 3 (Schedule) access with password protection
+  const handleTab3Click = () => {
+    if (isTab3Authenticated) {
+      setTab("schedule");
+      return;
+    }
+    
+    const password = prompt("Enter password to access FAD Zone:");
+    if (password === "23446187") {
+      setIsTab3Authenticated(true);
+      setTab("schedule");
+    } else {
+      alert("The function is for FAD team only.");
+      setTab("availability");
+    }
+  };
+
+  const DOW_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
   const renderCalendarGrid = (onDayClick, dayCell, meetingId = null) => (
     <div>
@@ -270,18 +296,17 @@ export default function App() {
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
-            <option value={2}>2026年3月</option>
-            <option value={3}>2026年4月</option>
-            <option value={4}>2026年5月</option>
-            <option value={5}>2026年6月</option>
+            <option value={3}>April 2026</option>
+            <option value={4}>May 2026</option>
           </select>
-          <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>會議排程</span>
+          <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem" }}>
-        <button style={tabStyle("availability")} onClick={() => setTab("availability")}>[GM] 填寫有空時段</button>
-        <button style={tabStyle("schedule")} onClick={() => setTab("schedule")}>[FAD] 安排會議時間</button>
-        <button style={tabStyle("result")} onClick={() => setTab("result")}>[FAD] 本月會議總覽</button>
+        <button style={tabStyle("availability")} onClick={() => setTab("availability")}> Fill in available time slots</button>
+        <button style={tabStyle("result")} onClick={() => setTab("result")}> Monthly Meeting Overview</button>
+        <button style={tabStyle("schedule")} onClick={handleTab3Click}>[FAD Zone] Schedule meetings</button>
+        
       </div>
 
       {/* ── TAB 1: Availability ── */}
@@ -289,72 +314,111 @@ export default function App() {
         <>
           {/* Meeting selector */}
           <div style={{ marginBottom: "1rem" }}>
-            <select value={activeMeeting}
-              onChange={e => { setActiveMeeting(e.target.value); setActiveMember(MEETINGS.find(m => m.id === e.target.value).members[0]); setSelectedDay(null); }}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1.5px solid ${meeting.color}`, background: meeting.bg, color: meeting.color, fontSize: 13, fontWeight: 500, cursor: "pointer", outline: "none" }}>
+            <select value={activeMeeting || ""}
+              onChange={e => { 
+                const newMeeting = e.target.value;
+                setActiveMeeting(newMeeting || null); 
+                if (newMeeting) {
+                  setActiveMember(MEETINGS.find(m => m.id === newMeeting).members[0]); 
+                } else {
+                  setActiveMember(null);
+                }
+                setSelectedDay(null); 
+              }}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1.5px solid #185FA5", background: "var(--color-background-secondary)", color: "#185FA5", fontSize: 13, fontWeight: 500, cursor: "pointer", outline: "none" }}>
+              <option value="" style={{ color: "#185FA5" }}>Please Select Your Team</option>
               {MEETINGS.map(mt => (
-                <option key={mt.id} value={mt.id}>{mt.label}（{mt.members.length} 人）</option>
+                <option key={mt.id} value={mt.id} style={{ color: "#185FA5" }}>{mt.label} ({mt.members.length} members)</option>
               ))}
             </select>
           </div>
 
           {/* Member selector */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "1rem" }}>
-            {meeting.members.map(mb => {
-              const filled = Object.values(availability[mb] || {}).filter(Boolean).length;
-              const active = mb === activeMember;
-              return (
-                <button key={mb} onClick={() => { setActiveMember(mb); setSelectedDay(null); }}
-                  style={{ fontSize: 12, padding: "4px 12px", borderRadius: 16, border: "0.5px solid", borderColor: active ? meeting.color : "var(--color-border-tertiary)", background: active ? meeting.bg : "transparent", color: active ? meeting.color : "var(--color-text-secondary)", cursor: "pointer" }}>
-                  {mb}{filled > 0 ? ` ·${filled}` : ""}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Mini calendar */}
-          <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1rem" }}>
-            <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--color-text-secondary)" }}>
-              選擇日期 → 填寫 <strong style={{ color: meeting.color }}>{activeMember}</strong> 有空的時段
-            </p>
-            {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
-              const hasAny = SLOTS.some(sl => availability[activeMember]?.[`${d}-${sl.id}`]);
-              const isSel = selectedDay === d;
-              const isDisabled = isWeekend || isHoliday;
-              return (
-                <button key={d} disabled={isDisabled} onClick={() => setSelectedDay(isSel ? null : d)}
-                  style={{ borderRadius: 8, padding: "7px 2px 5px", background: isSel ? meeting.bg : isDisabled ? "transparent" : "var(--color-background-primary)", border: "0.5px solid", borderColor: isSel ? meeting.color : isHoliday ? "#F59E0B" : "var(--color-border-tertiary)", cursor: isDisabled ? "default" : "pointer", opacity: isDisabled ? 0.3 : 1, textAlign: "center", outline: isSel ? `2px solid ${meeting.color}` : "none", position: "relative" }}>
-                  <div style={{ fontSize: 12, color: isSel ? meeting.color : isHoliday ? "#F59E0B" : "var(--color-text-primary)", fontWeight: isSel ? 500 : 400 }}>{d}</div>
-                  {hasAny && <div style={{ width: 5, height: 5, borderRadius: "50%", background: meeting.color, margin: "2px auto 0" }} />}
-                  {isHoliday && !isWeekend && <div style={{ fontSize: 8, color: "#F59E0B", marginTop: 1 }}>休</div>}
-                </button>
-              );
-            }, activeMeeting)}
-          </div>
-
-          {/* Slot picker */}
-          {selectedDay && (
-            <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: 12, padding: "1rem" }}>
-              <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--color-text-secondary)" }}>
-                {MONTH + 1}/{selectedDay} 有空時段
-              </p>
-              <div style={{ display: "flex", gap: 8 }}
-                onMouseLeave={() => setDragging(false)}
-                onMouseUp={() => setDragging(false)}>
-                {SLOTS.map(sl => {
-                  const key = `${selectedDay}-${sl.id}`;
-                  const filled = availability[activeMember]?.[key];
+          {meeting && (
+            <>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "1rem" }}>
+                {meeting.members.map(mb => {
+                  const filled = Object.values(availability[mb] || {}).filter(Boolean).length;
+                  const active = mb === activeMember;
+                  const isSaved = savedMembers.has(mb);
                   return (
-                    <div key={sl.id}
-                      onMouseDown={() => { setDragging(true); setDragVal(!filled); toggleSlot(activeMember, selectedDay, sl.id, !filled); }}
-                      onMouseEnter={() => { if (dragging) toggleSlot(activeMember, selectedDay, sl.id, dragVal); }}
-                      style={{ flex: 1, padding: "12px 6px", borderRadius: 10, background: filled ? meeting.bg : "var(--color-background-secondary)", border: "0.5px solid", borderColor: filled ? meeting.color : "var(--color-border-tertiary)", cursor: "pointer", textAlign: "center", userSelect: "none" }}>
-                      <div style={{ fontSize: 13, color: filled ? meeting.color : "var(--color-text-secondary)", fontWeight: filled ? 500 : 400 }}>{sl.label}</div>
-                    </div>
+                    <button key={mb} onClick={() => { setActiveMember(mb); setSelectedDay(null); }}
+                      style={{ fontSize: 12, padding: "4px 12px", borderRadius: 16, border: "0.5px solid", borderColor: active ? "#533AB7" : "var(--color-border-tertiary)", background: active ? "#EEEDFE" : "transparent", color: active ? "#533AB7" : "var(--color-text-secondary)", cursor: "pointer", position: "relative" }}>
+                      {mb}{filled > 0 ? ` ·${filled}` : ""}
+                      {isSaved && <span style={{ marginLeft: 4 }}>🔒</span>}
+                    </button>
                   );
                 })}
               </div>
-            </div>
+
+              {/* Mini calendar */}
+              {activeMember && (
+                <>
+                  <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1rem" }}>
+                    <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--color-text-secondary)" }}>
+                       <strong style={{ color: "#533AB7" }}>{activeMember}</strong> Select date → Available time slots → Save
+                    </p>
+                    {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
+                      const hasAny = SLOTS.some(sl => availability[activeMember]?.[`${d}-${sl.id}`]);
+                      const isSel = selectedDay === d;
+                      const isSaved = savedMembers.has(activeMember);
+                      const isPast = MONTH < CURRENT_MONTH || (MONTH === CURRENT_MONTH && d < today.getDate());
+                      const isDisabled = isWeekend || isHoliday || isSaved || isPast;
+                      return (
+                        <button key={d} disabled={isDisabled} onClick={() => !isSaved && setSelectedDay(isSel ? null : d)}
+                          style={{ borderRadius: 8, padding: "7px 2px 5px", background: isSel ? "#EEEDFE" : isDisabled ? "transparent" : "var(--color-background-primary)", border: "0.5px solid", borderColor: isSel ? "#533AB7" : isHoliday ? "#F59E0B" : "var(--color-border-tertiary)", cursor: isDisabled ? "default" : "pointer", opacity: isDisabled ? 0.3 : 1, textAlign: "center", outline: isSel ? "2px solid #533AB7" : "none", position: "relative" }}>
+                          <div style={{ fontSize: 12, color: isSel ? "#533AB7" : isHoliday ? "#F59E0B" : "var(--color-text-primary)", fontWeight: isSel ? 500 : 400 }}>{d}</div>
+                          {hasAny && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#533AB7", margin: "2px auto 0" }} />}
+                          {isHoliday && !isWeekend && <div style={{ fontSize: 8, color: "#F59E0B", marginTop: 1 }}>Holiday</div>}
+                        </button>
+                      );
+                    }, activeMeeting)}
+                  </div>
+
+                  {/* Slot picker */}
+                  {selectedDay && !savedMembers.has(activeMember) && (
+                    <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: 12, padding: "1rem" }}>
+                      <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--color-text-secondary)" }}>
+                        Available time for {MONTH + 1}/{selectedDay}
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}
+                        onMouseLeave={() => setDragging(false)}
+                        onMouseUp={() => setDragging(false)}>
+                        {SLOTS.map(sl => {
+                          const key = `${selectedDay}-${sl.id}`;
+                          const filled = availability[activeMember]?.[key];
+                          return (
+                            <div key={sl.id}
+                              onMouseDown={() => { setDragging(true); setDragVal(!filled); toggleSlot(activeMember, selectedDay, sl.id, !filled); }}
+                              onMouseEnter={() => { if (dragging) toggleSlot(activeMember, selectedDay, sl.id, dragVal); }}
+                              style={{ flex: 1, padding: "12px 6px", borderRadius: 10, background: filled ? "#EEEDFE" : "var(--color-background-secondary)", border: "0.5px solid", borderColor: filled ? "#533AB7" : "var(--color-border-tertiary)", cursor: "pointer", textAlign: "center", userSelect: "none" }}>
+                              <div style={{ fontSize: 13, color: filled ? "#533AB7" : "var(--color-text-secondary)", fontWeight: filled ? 500 : 400 }}>{sl.label}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save button section */}
+                  {!savedMembers.has(activeMember) && Object.values(availability[activeMember] || {}).filter(Boolean).length > 0 && (
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+                      <button onClick={() => saveAvailability(activeMember)}
+                        style={{ fontSize: 13, padding: "10px 32px", borderRadius: 8, border: "none", background: "#533AB7", color: "white", cursor: "pointer", fontWeight: 500 }}>
+                        Save Availability
+                      </button>
+                    </div>
+                  )}
+                  {savedMembers.has(activeMember) && (
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+                      <span style={{ fontSize: 13, color: "#10B981", background: "#D1FAE5", padding: "10px 24px", borderRadius: 8, fontWeight: 500 }}>
+                        ✓ Availability Saved
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}
@@ -372,14 +436,14 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 500, color: mt.color }}>{mt.label}</span>
-                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)", marginLeft: 8 }}>{mt.members.length} 人</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)", marginLeft: 8 }}>{mt.members.length} members</span>
                     </div>
                     {sched && (
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 12, background: mt.bg, color: mt.color, padding: "3px 10px", borderRadius: 10, border: `0.5px solid ${mt.color}` }}>
                           {MONTH + 1}/{sched.day} {SLOTS.find(s => s.id === sched.slotId)?.label}
                         </span>
-                        {conflict && <span style={{ fontSize: 11, color: "#A32D2D", background: "#FCEBEB", padding: "3px 8px", borderRadius: 8 }}>時段衝突</span>}
+                        {conflict && <span style={{ fontSize: 11, color: "#A32D2D", background: "#FCEBEB", padding: "3px 8px", borderRadius: 8 }}>Time conflict</span>}
                         <button onClick={() => unschedule(mt.id)} style={{ fontSize: 11, color: "var(--color-text-secondary)", background: "transparent", border: "none", cursor: "pointer" }}>✕</button>
                       </div>
                     )}
@@ -389,9 +453,9 @@ export default function App() {
                     <>
                       <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 8px" }}>
                         {best.length === 0 ? (() => {
-                          // 检查哪些成员未填写有空时段
+                          // Check which members haven't filled in availability
                           const membersToCheck = [...mt.members];
-                          // China, JPKR, Europe, TW 团队需要包含 Teri Chang
+                          // China, JPKR, Europe, TW teams also need to include Teri Chang
                           if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
                             membersToCheck.push("Teri Chang");
                           }
@@ -402,15 +466,15 @@ export default function App() {
                           });
                           
                           if (notFilledMembers.length > 0) {
-                            return `${notFilledMembers.join(", ")} 未填寫有空時段`;
+                            return `${notFilledMembers.join(", ")} haven't filled in availability`;
                           }
-                          return "所有人均已填寫, 無有空時段";
-                        })() : `全員有空的時段（${best.length} 個）：`}
+                          return "Everyone has filled in, but no available time slots";
+                        })() : `Select the Time slots available for all (${best.length}):`}
                       </p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {best.map(({ day, slotId }) => {
                           const dow = new Date(YEAR, MONTH, day).getDay();
-                          const dowL = ["日","一","二","三","四","五","六"][dow];
+                          const dowL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow];
                           const conflict2 = hasConflict(mt.id, day, slotId);
                           return (
                             <button key={`${day}-${slotId}`}
@@ -425,11 +489,62 @@ export default function App() {
                     </>
                   )}
 
-                  {/* Members */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                    {mt.members.map(mb => (
-                      <span key={mb} style={{ fontSize: 11, color: "var(--color-text-secondary)", background: "var(--color-background-secondary)", padding: "2px 8px", borderRadius: 8 }}>{mb}</span>
-                    ))}
+                  {/* Members Status Table */}
+                  <div style={{ marginTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 12 }}>
+                    <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: "left", padding: "6px 8px", background: "var(--color-background-secondary)", borderRadius: "8px 0 0 0", fontWeight: 500, color: "var(--color-text-primary)" }}>Not Finish</th>
+                          <th style={{ textAlign: "left", padding: "6px 8px", background: "var(--color-background-secondary)", borderRadius: "0 8px 0 0", fontWeight: 500, color: "var(--color-text-primary)" }}>Finish</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: "8px", verticalAlign: "top", borderRight: "0.5px solid var(--color-border-tertiary)" }}>
+                            {(() => {
+                              const membersToCheck = [...mt.members];
+                              if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
+                                membersToCheck.push("Teri Chang");
+                              }
+                              const notFinished = membersToCheck.filter(mb => {
+                                const memberAvail = availability[mb] || {};
+                                return Object.values(memberAvail).every(v => !v);
+                              });
+                              return notFinished.length > 0 ? (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {notFinished.map(mb => (
+                                    <span key={mb} style={{ fontSize: 11, color: "#A32D2D", background: "#FCEBEB", padding: "2px 8px", borderRadius: 8 }}>{mb}</span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>—</span>
+                              );
+                            })()}
+                          </td>
+                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                            {(() => {
+                              const membersToCheck = [...mt.members];
+                              if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
+                                membersToCheck.push("Teri Chang");
+                              }
+                              const finished = membersToCheck.filter(mb => {
+                                const memberAvail = availability[mb] || {};
+                                return Object.values(memberAvail).some(v => v);
+                              });
+                              return finished.length > 0 ? (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {finished.map(mb => (
+                                    <span key={mb} style={{ fontSize: 11, color: "#10B981", background: "#D1FAE5", padding: "2px 8px", borderRadius: 8 }}>{mb}</span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>—</span>
+                              );
+                            })()}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
@@ -445,7 +560,7 @@ export default function App() {
           <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1.25rem" }}>
             {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
               const dayMeetings = MEETINGS.filter(mt => scheduled[mt.id]?.day === d);
-              // 檢查當天是否為任何團隊的假日
+              // Check if the date is a holiday for any team
               const isTWHol = isTWHoliday(YEAR, MONTH, d);
               const isUSAHol = isUSAHoliday(YEAR, MONTH, d);
               const isCNHol = isChinaHoliday(YEAR, MONTH, d);
@@ -454,20 +569,20 @@ export default function App() {
               const hasAnyHoliday = isTWHol || isUSAHol || isCNHol || isJPKRHol || isEUHol;
               const isDisabled = isWeekend || hasAnyHoliday;
               return (
-                <div key={d} style={{ borderRadius: 8, padding: "5px 3px", background: dayMeetings.length > 0 ? "var(--color-background-primary)" : "transparent", border: `0.5px solid ${hasAnyHoliday && !isWeekend ? "#F59E0B" : dayMeetings.length > 0 ? "var(--color-border-secondary)" : "transparent"}`, minHeight: 52, opacity: isDisabled ? 0.25 : 1, position: "relative" }}>
-                  <div style={{ fontSize: 11, textAlign: "center", color: hasAnyHoliday ? "#F59E0B" : "var(--color-text-secondary)", marginBottom: 2 }}>
+                <div key={d} style={{ borderRadius: 8, padding: "5px 3px", background: dayMeetings.length > 0 ? "var(--color-background-primary)" : "transparent", border: `0.5px solid ${hasAnyHoliday && !isWeekend ? "#260bf5" : dayMeetings.length > 0 ? "var(--color-border-secondary)" : "transparent"}`, minHeight: 52, opacity: isDisabled ? 0.25 : 1, position: "relative" }}>
+                  <div style={{ fontSize: 12, textAlign: "center", color: hasAnyHoliday ? "#170bf5" : "var(--color-text-secondary)", marginBottom: 2 }}>
                     {d}
                     {hasAnyHoliday && !isWeekend && (
-                      <div style={{ fontSize: 8, color: "#F59E0B" }}>
-                        {isCNHol && "CN休"}
+                      <div style={{ fontSize: 8, color: "#130bf5" }}>
+                        {isCNHol && "CN Holiday"}
                         {isCNHol && (isTWHol || isUSAHol || isJPKRHol || isEUHol) && "/"}
-                        {isEUHol && "EU休"}
+                        {isEUHol && "EU Holiday"}
                         {isEUHol && (isJPKRHol || isTWHol || isUSAHol) && "/"}
-                        {isJPKRHol && "JPKR休"}
+                        {isJPKRHol && "JPKR Holiday"}
                         {isJPKRHol && (isTWHol || isUSAHol) && "/"}
-                        {isTWHol && "TW休"}
+                        {isTWHol && "TW Holiday"}
                         {isTWHol && isUSAHol && "/"}
-                        {isUSAHol && "US休"}
+                        {isUSAHol && "US Holiday"}
                       </div>
                     )}
                   </div>
@@ -502,12 +617,12 @@ export default function App() {
                   </div>
                   {sched ? (
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: mt.color }}>{MONTH + 1}/{sched.day}（{["日","一","二","三","四","五","六"][new Date(YEAR,MONTH,sched.day).getDay()]}）</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: mt.color }}>{MONTH + 1}/{sched.day} ({["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(YEAR,MONTH,sched.day).getDay()]})</div>
                       <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{SLOTS.find(s => s.id === sched.slotId)?.label}</div>
-                      {conflict && <div style={{ fontSize: 11, color: "#A32D2D" }}>⚠ 有成員時段衝突</div>}
+                      {conflict && <div style={{ fontSize: 11, color: "#A32D2D" }}>⚠ Member time conflict</div>}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)", background: "var(--color-background-secondary)", padding: "4px 10px", borderRadius: 8 }}>未安排</span>
+                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)", background: "var(--color-background-secondary)", padding: "4px 10px", borderRadius: 8 }}>Not scheduled</span>
                   )}
                 </div>
               );
