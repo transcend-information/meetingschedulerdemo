@@ -229,6 +229,39 @@ export default function App() {
   };
 
   const saveAvailability = async (member) => {
+    // Collect all filled time slots for confirmation
+    const memberAvail = availability[member] || {};
+    const filledSlots = {};
+    
+    // Group filled slots by day
+    Object.keys(memberAvail).forEach(key => {
+      if (memberAvail[key]) {
+        const [day, slotId] = key.split('-');
+        if (!filledSlots[day]) {
+          filledSlots[day] = [];
+        }
+        const slotLabel = SLOTS.find(s => s.id === slotId)?.label;
+        filledSlots[day].push(slotLabel);
+      }
+    });
+    
+    // Format confirmation message
+    let message = `${member}, please confirm your availability:\n\n`;
+    const sortedDays = Object.keys(filledSlots).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    sortedDays.forEach(day => {
+      const dow = new Date(YEAR, MONTH, parseInt(day)).getDay();
+      const dowLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dow];
+      message += `${MONTH + 1}/${day} (${dowLabel}): ${filledSlots[day].join(', ')}\n`;
+    });
+    
+    message += `\nDo you want to save this availability?`;
+    
+    // Show confirmation dialog
+    if (!confirm(message)) {
+      return; // User cancelled
+    }
+    
     try {
       const newSavedMembers = new Set([...savedMembers, member]);
       setSavedMembers(newSavedMembers);
@@ -241,6 +274,7 @@ export default function App() {
         lastUpdated: new Date().toISOString()
       });
       console.log("Availability saved to Firebase successfully");
+      alert("Availability saved successfully!");
     } catch (error) {
       console.error("Error saving availability to Firebase:", error);
       alert("Failed to save data. Please try again.");
@@ -257,10 +291,15 @@ export default function App() {
       newSavedMembers.delete(member);
       setSavedMembers(newSavedMembers);
       
+      // Clear the member's availability data
+      const newAvailability = { ...availability };
+      newAvailability[member] = {};
+      setAvailability(newAvailability);
+      
       // Save to Firebase
       const docRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
       await setDoc(docRef, {
-        data: availability,
+        data: newAvailability,
         savedMembers: Array.from(newSavedMembers),
         lastUpdated: new Date().toISOString()
       });
@@ -269,6 +308,45 @@ export default function App() {
     } catch (error) {
       console.error("Error resetting availability:", error);
       alert("Failed to reset availability. Please try again.");
+    }
+  };
+
+  const resetAll = async () => {
+    if (!confirm(`⚠️ WARNING: This will permanently delete ALL availability data and meeting schedules for ${MONTH_NAME}.\n\nThis action cannot be undone. Are you sure?`)) {
+      return;
+    }
+
+    // Double confirmation for safety
+    if (!confirm(`Final confirmation: Delete all data for ${MONTH_NAME}?`)) {
+      return;
+    }
+
+    try {
+      // Clear availability data
+      const availDocRef = doc(db, 'availability', `${YEAR}_${MONTH}`);
+      await setDoc(availDocRef, {
+        data: initAvailability(),
+        savedMembers: [],
+        lastUpdated: new Date().toISOString()
+      });
+
+      // Clear scheduled meetings
+      const schedDocRef = doc(db, 'scheduled', `${YEAR}_${MONTH}`);
+      await setDoc(schedDocRef, {
+        data: initScheduled(),
+        lastUpdated: new Date().toISOString()
+      });
+
+      // Reset local state
+      setAvailability(initAvailability());
+      setSavedMembers(new Set());
+      setScheduled(initScheduled());
+      
+      console.log("All data reset successfully");
+      alert(`All data for ${MONTH_NAME} has been cleared successfully.`);
+    } catch (error) {
+      console.error("Error resetting all data:", error);
+      alert("Failed to reset all data. Please try again.");
     }
   };
 
@@ -410,6 +488,13 @@ export default function App() {
     <div style={{ fontFamily: "var(--font-sans)", padding: "1rem 1.25rem", maxWidth: 820, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: "1rem" }}>
+          <img 
+            src="https://cdn.transcend-info.com/images/ts_logo.png" 
+            alt="Transcend Logo" 
+            style={{ height: 40, width: "auto" }} 
+          />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <select 
             value={selectedMonth} 
@@ -545,7 +630,7 @@ export default function App() {
       {/* ── TAB 2: Schedule ── */}
       {tab === "schedule" && (
         <>
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 12, margin: "0 auto" }}>
             {MEETINGS.map(mt => {
               const best = bestSlots[mt.id];
               const sched = scheduled[mt.id];
@@ -625,10 +710,7 @@ export default function App() {
                               if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
                                 membersToCheck.push("Teri Chang");
                               }
-                              const notFinished = membersToCheck.filter(mb => {
-                                const memberAvail = availability[mb] || {};
-                                return Object.values(memberAvail).every(v => !v);
-                              });
+                              const notFinished = membersToCheck.filter(mb => !savedMembers.has(mb));
                               return notFinished.length > 0 ? (
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                                   {notFinished.map(mb => (
@@ -646,10 +728,7 @@ export default function App() {
                               if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
                                 membersToCheck.push("Teri Chang");
                               }
-                              const finished = membersToCheck.filter(mb => {
-                                const memberAvail = availability[mb] || {};
-                                return Object.values(memberAvail).some(v => v);
-                              });
+                              const finished = membersToCheck.filter(mb => savedMembers.has(mb));
                               return finished.length > 0 ? (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                                   {finished.map(mb => {
@@ -686,6 +765,14 @@ export default function App() {
               );
             })}
           </div>
+
+          {/* Reset All Button */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "0.5px solid var(--color-border-tertiary)" }}>
+            <button onClick={resetAll}
+              style={{ fontSize: 13, padding: "10px 32px", borderRadius: 8, border: "1px solid #DC2626", background: "#FEE2E2", color: "#DC2626", cursor: "pointer", fontWeight: 600 }}>
+              🗑️ Reset All Data
+            </button>
+          </div>
         </>
       )}
 
@@ -693,7 +780,7 @@ export default function App() {
       {tab === "result" && (
         <>
           {/* Calendar with meetings marked */}
-          <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1.25rem" }}>
+          <div style={{ background: "var(--color-background-secondary)", borderRadius: 12, padding: "1rem", marginBottom: "1.25rem", margin: "0 auto 1.25rem auto" }}>
             {renderCalendarGrid(null, (d, dow, isWeekend, isHoliday) => {
               const dayMeetings = MEETINGS.filter(mt => scheduled[mt.id]?.day === d);
               // Check if the date is a holiday for any team
@@ -736,7 +823,7 @@ export default function App() {
           </div>
 
           {/* Summary list */}
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 8, margin: "0 auto" }}>
             {MEETINGS.map(mt => {
               const sched = scheduled[mt.id];
               const conflict = sched && hasConflict(mt.id, sched.day, sched.slotId);
