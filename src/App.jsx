@@ -811,8 +811,8 @@ export default function App() {
                   {dayMeetings.map(mt => {
                     const timeLabel = SLOTS.find(s => s.id === scheduled[mt.id]?.slotId)?.label.replace(/ (AM|PM)/, '').replace('–', '-');
                     return (
-                      <div key={mt.id} style={{ fontSize: 9, background: mt.bg, color: mt.color, borderRadius: 4, padding: "1px 4px", marginBottom: 2, lineHeight: 1.4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                        {timeLabel} ({mt.id})
+                      <div key={mt.id} style={{ fontSize: 12, background: mt.bg, color: mt.color, borderRadius: 4, padding: "1px 4px", marginBottom: 2, lineHeight: 1.4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                        {timeLabel} ({mt.id} Team)
                       </div>
                     );
                   })}
