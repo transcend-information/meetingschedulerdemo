@@ -44,7 +44,7 @@ const TW_HOLIDAYS_2026 = {
 const USA_HOLIDAYS_2026 = {
   3: [], // No federal holidays in March
   4: [], // No federal holidays in April
-  5: [25], // 5/25 Memorial Day
+  5: [1,25], // 5/25 Memorial Day
   6: [19] // 6/19 Juneteenth
 };
 
@@ -52,7 +52,7 @@ const USA_HOLIDAYS_2026 = {
 const CHINA_HOLIDAYS_2026 = {
   3: [], // No statutory holidays in March
   4: [4, 5, 6], // 4/4-6 Tomb Sweeping Festival holiday
-  5: [1, 2, 3, 4, 5], // 5/1-5 Labor Day holiday (work on 5/9 Saturday)
+  5: [1, 2, 3, 4, 5, 25], // 5/1-5 Labor Day holiday (work on 5/9 Saturday)
   6: [19, 20, 21] // 6/19-21 Dragon Boat Festival holiday
 };
 
@@ -60,7 +60,7 @@ const CHINA_HOLIDAYS_2026 = {
 const JPKR_HOLIDAYS_2026 = {
   3: [1, 20], // 3/1 Korea Independence Movement Day, 3/20 Japan Vernal Equinox Day
   4: [5, 29], // 4/5 Korea Buddha's Birthday, 4/29 Japan Showa Day
-  5: [3, 4, 5, 6], // 5/3-6 Japan Golden Week (Constitution Day, Greenery Day, Children's Day, substitute holiday), 5/5 Korea Children's Day
+  5: [1, 3, 4, 5, 6], // 5/3-6 Japan Golden Week (Constitution Day, Greenery Day, Children's Day, substitute holiday), 5/5 Korea Children's Day
   6: [6] // 6/6 Korea Memorial Day
 };
 
@@ -147,7 +147,7 @@ function initAvailability() {
 }
 
 export default function App() {
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH); // 0-based month index
+  const [selectedMonth, setSelectedMonth] = useState(4); // 0-based month index, fixed to May
   const [tab, setTab] = useState("availability"); // availability | schedule | result
   const [activeMeeting, setActiveMeeting] = useState(null); // null = no team selected
   const [activeMember, setActiveMember] = useState(null);
@@ -500,8 +500,7 @@ export default function App() {
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
-            <option value={4}>April 2026</option>
-            <option value={5}>May 2026</option>
+            <option value={4}>May 2026</option>
           </select>
           <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
