@@ -29,8 +29,41 @@ const SLOTS = [
   { id: "s1", label: "8–10 AM" },
   { id: "s2", label: "10–12 PM" },
   { id: "s3", label: "13–15 PM" },
-  { id: "s4", label: "15–17 PM" }
+  { id: "s4", label: "15–17 PM" },
+  { id: "s5", label: "17–19 PM" }
 ];
+
+const USA_SLOT_TIMEZONES = {
+  s1: { tpe: "8–10 AM\n", la: "5–7 PM (prev day)\n", maryland: "8–10 PM (prev day)\n" },
+  s2: { tpe: "10–12 PM\n", la: "7–9 PM (prev day)\n", maryland: "10–12 PM (prev day)\n" },
+  s3: { tpe: "13–15 PM\n", la: "10–12 PM (prev day)\n", maryland: "1–3 AM\n" },
+  s4: { tpe: "15–17 PM\n", la: "12–2 AM\n", maryland: "3–5 AM\n" },
+  s5: { tpe: "17–19 PM\n", la: "2–4 AM\n", maryland: "5–7 AM\n" }
+};
+
+const TW_SLOT_TIMEZONES = {
+  s1: { tpe: "8–10 AM\n", la: "5–7 PM (prev day)\n" },
+  s2: { tpe: "10–12 PM\n", la: "7–9 PM (prev day)\n" },
+  s3: { tpe: "13–15 PM\n", la: "10–12 PM (prev day)\n" },
+  s4: { tpe: "15–17 PM\n", la: "12–2 AM\n" },
+  s5: { tpe: "17–19 PM\n", la: "2–4 AM\n" }
+};
+
+const JPKR_SLOT_TIMEZONES = {
+  s1: { tpe: "8–10 AM\n", tyo: "9–11 AM\n", la: "5–7 PM (prev day)\n" },
+  s2: { tpe: "10–12 PM\n", tyo: "11–1 PM\n", la: "7–9 PM (prev day)\n" },
+  s3: { tpe: "13–15 PM\n", tyo: "2–4 PM\n", la: "10–12 PM (prev day)\n" },
+  s4: { tpe: "15–17 PM\n", tyo: "4–6 PM\n", la: "12–2 AM\n" },
+  s5: { tpe: "17–19 PM\n", tyo: "6–8 PM\n", la: "2–4 AM\n" }
+};
+
+const EUROPE_SLOT_TIMEZONES = {
+  s1: { tpe: "8–10 AM\n", cest: "2–4 AM\n", gmt: "1–3 AM\n", la: "5–7 PM (prev day)\n" },
+  s2: { tpe: "10–12 PM\n", cest: "4–6 AM\n", gmt: "3–5 AM\n", la: "7–9 PM (prev day)\n" },
+  s3: { tpe: "13–15 PM\n", cest: "7–9 AM\n", gmt: "6–8 AM\n", la: "10–12 PM (prev day)\n" },
+  s4: { tpe: "15–17 PM\n", cest: "9–11 AM\n", gmt: "8–10 AM\n", la: "12–2 AM\n" },
+  s5: { tpe: "17–19 PM\n", cest: "11–1 PM\n", gmt: "10–12 PM\n", la: "2–4 AM\n" }
+};
 
 // Taiwan National Holidays 2026 (format: "month-day")
 const TW_HOLIDAYS_2026 = {
@@ -177,6 +210,50 @@ export default function App() {
 
   const meeting = activeMeeting ? MEETINGS.find(m => m.id === activeMeeting) : null;
 
+  const getAvailabilitySlotLabel = (slotId, meetingId = activeMeeting) => {
+    const slotLabel = SLOTS.find(s => s.id === slotId)?.label || slotId;
+
+    if (meetingId !== "USA" && meetingId !== "TW" && meetingId !== "China" && meetingId !== "JPKR" && meetingId !== "Europe") {
+      return slotLabel;
+    }
+
+    let timezoneLabels;
+    if (meetingId === "USA") {
+      timezoneLabels = USA_SLOT_TIMEZONES[slotId];
+    } else if (meetingId === "JPKR") {
+      timezoneLabels = JPKR_SLOT_TIMEZONES[slotId];
+    } else if (meetingId === "Europe") {
+      timezoneLabels = EUROPE_SLOT_TIMEZONES[slotId];
+    } else {
+      timezoneLabels = TW_SLOT_TIMEZONES[slotId];
+    }
+    if (!timezoneLabels) {
+      return slotLabel;
+    }
+
+    const tpe = timezoneLabels.tpe.replace(/\n+$/, "");
+    const la = timezoneLabels.la.replace(/\n+$/, "");
+
+    if (meetingId === "Europe") {
+      const cest = timezoneLabels.cest.replace(/\n+$/, "");
+      const gmt = timezoneLabels.gmt.replace(/\n+$/, "");
+      return `TPE ${tpe}\nCEST ${cest}\nGMT ${gmt}\nLA ${la}`;
+    }
+
+    if (meetingId === "JPKR") {
+      const tyo = timezoneLabels.tyo.replace(/\n+$/, "");
+      return `TPE ${tpe}\nTYO ${tyo}\nLA ${la}`;
+    }
+
+    if (meetingId === "TW" || meetingId === "China") {
+      return `TPE ${tpe}\nLA ${la}`;
+    }
+
+    const maryland = timezoneLabels.maryland.replace(/\n+$/, "");
+
+    return `TPE ${tpe}\nLA ${la}\nMD ${maryland}`;
+  };
+
   // Load data from Firebase on mount, when month changes, or when visiting Tab 1
   useEffect(() => {
     const loadData = async () => {
@@ -249,7 +326,7 @@ export default function App() {
         if (!filledSlots[day]) {
           filledSlots[day] = [];
         }
-        const slotLabel = SLOTS.find(s => s.id === slotId)?.label;
+        const slotLabel = getAvailabilitySlotLabel(slotId, activeMeeting);
         filledSlots[day].push(slotLabel);
       }
     });
@@ -599,12 +676,15 @@ export default function App() {
                         {SLOTS.map(sl => {
                           const key = `${selectedDay}-${sl.id}`;
                           const filled = availability[activeMember]?.[key];
+                          const slotLabel = getAvailabilitySlotLabel(sl.id, activeMeeting);
                           return (
                             <div key={sl.id}
                               onMouseDown={() => { setDragging(true); setDragVal(!filled); toggleSlot(activeMember, selectedDay, sl.id, !filled); }}
                               onMouseEnter={() => { if (dragging) toggleSlot(activeMember, selectedDay, sl.id, dragVal); }}
                               style={{ flex: 1, padding: "12px 6px", borderRadius: 10, background: filled ? "#EEEDFE" : "var(--color-background-secondary)", border: "0.5px solid", borderColor: filled ? "#533AB7" : "var(--color-border-tertiary)", cursor: "pointer", textAlign: "center", userSelect: "none" }}>
-                              <div style={{ fontSize: 13, color: filled ? "#533AB7" : "var(--color-text-secondary)", fontWeight: filled ? 500 : 400 }}>{sl.label}</div>
+                              <div style={{ fontSize: 13, color: filled ? "#533AB7" : "var(--color-text-secondary)", fontWeight: filled ? 500 : 400, lineHeight: 1.35, whiteSpace: "pre-line" }}>
+                                {slotLabel}
+                              </div>
                             </div>
                           );
                         })}
@@ -628,7 +708,7 @@ export default function App() {
                       if (memberAvail[key]) {
                         const [day, slotId] = key.split('-');
                         if (!filledSlots[day]) filledSlots[day] = [];
-                        const slotLabel = SLOTS.find(s => s.id === slotId)?.label;
+                        const slotLabel = getAvailabilitySlotLabel(slotId, activeMeeting);
                         if (slotLabel) filledSlots[day].push(slotLabel);
                       }
                     });
@@ -650,7 +730,7 @@ export default function App() {
                                   </span>
                                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                                     {filledSlots[day].map(label => (
-                                      <span key={label} style={{ fontSize: 11, background: "#A7F3D0", color: "#065F46", padding: "2px 8px", borderRadius: 10, border: "0.5px solid #6EE7B7" }}>
+                                      <span key={label} style={{ fontSize: 11, background: "#A7F3D0", color: "#065F46", padding: "2px 8px", borderRadius: 10, border: "0.5px solid #6EE7B7", whiteSpace: "pre-line" }}>
                                         {label}
                                       </span>
                                     ))}
