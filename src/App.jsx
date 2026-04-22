@@ -37,7 +37,10 @@ const TW_HOLIDAYS_2026 = {
   3: [28, 29], // 3/28-29 Memorial Day (supplementary holiday)
   4: [3, 4, 5, 6], // 4/3-6 Tomb Sweeping Day holiday
   5: [1], // 5/1 Labor Day
-  6: [19] // 6/19 Dragon Boat Festival
+  6: [19], // 6/19 Dragon Boat Festival
+  9: [25, 28], // 9/25 Mid-Autumn Festival, 9/28 Teachers' Day
+  10: [9, 10, 26], // 10/9-10 National Day, 10/26 Taiwan Restoration Day holiday
+  12: [25] // 12/25 Constitution Day
 };
 
 // USA National Holidays 2026
@@ -45,7 +48,13 @@ const USA_HOLIDAYS_2026 = {
   3: [], // No federal holidays in March
   4: [], // No federal holidays in April
   5: [1,25], // 5/25 Memorial Day
-  6: [19] // 6/19 Juneteenth
+  6: [19], // 6/19 Juneteenth
+  7: [3], // 7/3 Independence Day (observed; July 4 falls on Saturday)
+  8: [], // No federal holidays in August
+  9: [7], // 9/7 Labor Day
+  10: [12], // 10/12 Columbus Day / Indigenous Peoples' Day
+  11: [11, 26], // 11/11 Veterans Day, 11/26 Thanksgiving
+  12: [25] // 12/25 Christmas Day
 };
 
 // China National Holidays 2026
@@ -612,13 +621,48 @@ export default function App() {
                       </button>
                     </div>
                   )}
-                  {savedMembers.has(activeMember) && (
-                    <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
-                      <span style={{ fontSize: 13, color: "#10B981", background: "#D1FAE5", padding: "10px 24px", borderRadius: 8, fontWeight: 500 }}>
-                        ✓ Availability Saved
-                      </span>
-                    </div>
-                  )}
+                  {savedMembers.has(activeMember) && (() => {
+                    const memberAvail = availability[activeMember] || {};
+                    const filledSlots = {};
+                    Object.keys(memberAvail).forEach(key => {
+                      if (memberAvail[key]) {
+                        const [day, slotId] = key.split('-');
+                        if (!filledSlots[day]) filledSlots[day] = [];
+                        const slotLabel = SLOTS.find(s => s.id === slotId)?.label;
+                        if (slotLabel) filledSlots[day].push(slotLabel);
+                      }
+                    });
+                    const sortedDays = Object.keys(filledSlots).sort((a, b) => parseInt(a) - parseInt(b));
+                    return (
+                      <div style={{ marginTop: "1rem", background: "#D1FAE5", border: "0.5px solid #6EE7B7", borderRadius: 12, padding: "1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: sortedDays.length > 0 ? 10 : 0 }}>
+                          <span style={{ fontSize: 13, color: "#10B981", fontWeight: 600 }}>✓ Availability Saved</span>
+                        </div>
+                        {sortedDays.length > 0 && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {sortedDays.map(day => {
+                              const dow = new Date(YEAR, MONTH, parseInt(day)).getDay();
+                              const dowLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dow];
+                              return (
+                                <div key={day} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 12, color: "#065F46", fontWeight: 500, minWidth: 80 }}>
+                                    {MONTH + 1}/{day} ({dowLabel})
+                                  </span>
+                                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                                    {filledSlots[day].map(label => (
+                                      <span key={label} style={{ fontSize: 11, background: "#A7F3D0", color: "#065F46", padding: "2px 8px", borderRadius: 10, border: "0.5px solid #6EE7B7" }}>
+                                        {label}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </>
