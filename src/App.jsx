@@ -33,6 +33,11 @@ const SLOTS = [
   { id: "s5", label: "17–19 PM" }
 ];
 
+const SLOT_ORDER = SLOTS.reduce((acc, slot, index) => {
+  acc[slot.id] = index;
+  return acc;
+}, {});
+
 const USA_SLOT_TIMEZONES = {
   s1: { tpe: "8–10 AM\n", la: "5–7 PM (prev day)\n", maryland: "8–10 PM (prev day)\n" },
   s2: { tpe: "10–12 PM\n", la: "7–9 PM (prev day)\n", maryland: "10–12 PM (prev day)\n" },
@@ -327,7 +332,7 @@ export default function App() {
           filledSlots[day] = [];
         }
         const slotLabel = getAvailabilitySlotLabel(slotId, activeMeeting);
-        filledSlots[day].push(slotLabel);
+        filledSlots[day].push({ slotId, slotLabel });
       }
     });
     
@@ -338,7 +343,10 @@ export default function App() {
     sortedDays.forEach(day => {
       const dow = new Date(YEAR, MONTH, parseInt(day)).getDay();
       const dowLabel = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dow];
-      message += `${MONTH + 1}/${day} (${dowLabel}): ${filledSlots[day].join(', ')}\n`;
+      const sortedSlotLabels = filledSlots[day]
+        .sort((a, b) => SLOT_ORDER[a.slotId] - SLOT_ORDER[b.slotId])
+        .map(item => item.slotLabel);
+      message += `${MONTH + 1}/${day} (${dowLabel}): ${sortedSlotLabels.join(', ')}\n`;
     });
     
     message += `\nDo you want to save this availability?`;
@@ -475,6 +483,50 @@ export default function App() {
     });
     return res;
   }, [availability]);
+
+  const commonSlots = useMemo(() => {
+    const res = {};
+
+    MEETINGS.forEach(mt => {
+      const participants = [...mt.members];
+      if (["China", "JPKR", "Europe", "TW"].includes(mt.id)) {
+        participants.push("Teri Chang");
+      }
+
+      const candidates = [];
+      for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+        const dow = new Date(YEAR, MONTH, d).getDay();
+        const isHoliday = isHolidayForMeeting(mt.id, YEAR, MONTH, d);
+        if (dow === 0 || dow === 6 || isHoliday) continue;
+
+        SLOTS.forEach(sl => {
+          const key = `${d}-${sl.id}`;
+          // For TW fallback suggestions, only keep slots where Teri Chang is available.
+          if (mt.id === "TW" && !availability["Teri Chang"]?.[key]) return;
+          const availableCount = participants.filter(mb => availability[mb]?.[key]).length;
+          const unavailableMembers = participants.filter(mb => !availability[mb]?.[key]);
+          candidates.push({
+            day: d,
+            slotId: sl.id,
+            availableCount,
+            totalCount: participants.length,
+            unavailableMembers
+          });
+        });
+      }
+
+      res[mt.id] = candidates
+        .filter(c => c.availableCount > 0)
+        .sort((a, b) => {
+          if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
+          if (a.day !== b.day) return a.day - b.day;
+          return SLOTS.findIndex(s => s.id === a.slotId) - SLOTS.findIndex(s => s.id === b.slotId);
+        })
+        .slice(0, 2);
+    });
+
+    return res;
+  }, [availability, DAYS_IN_MONTH, YEAR, MONTH]);
 
   // Schedule a meeting
   const scheduleMeeting = async (meetingId, day, slotId) => {
@@ -709,7 +761,7 @@ export default function App() {
                         const [day, slotId] = key.split('-');
                         if (!filledSlots[day]) filledSlots[day] = [];
                         const slotLabel = getAvailabilitySlotLabel(slotId, activeMeeting);
-                        if (slotLabel) filledSlots[day].push(slotLabel);
+                        if (slotLabel) filledSlots[day].push({ slotId, slotLabel });
                       }
                     });
                     const sortedDays = Object.keys(filledSlots).sort((a, b) => parseInt(a) - parseInt(b));
@@ -729,9 +781,11 @@ export default function App() {
                                     {MONTH + 1}/{day} ({dowLabel})
                                   </span>
                                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                                    {filledSlots[day].map(label => (
-                                      <span key={label} style={{ fontSize: 11, background: "#A7F3D0", color: "#065F46", padding: "2px 8px", borderRadius: 10, border: "0.5px solid #6EE7B7", whiteSpace: "pre-line" }}>
-                                        {label}
+                                    {filledSlots[day]
+                                      .sort((a, b) => SLOT_ORDER[a.slotId] - SLOT_ORDER[b.slotId])
+                                      .map(label => (
+                                      <span key={`${label.slotId}-${label.slotLabel}`} style={{ fontSize: 11, background: "#A7F3D0", color: "#065F46", padding: "2px 8px", borderRadius: 10, border: "0.5px solid #6EE7B7", whiteSpace: "pre-line" }}>
+                                        {label.slotLabel}
                                       </span>
                                     ))}
                                   </div>
@@ -756,6 +810,7 @@ export default function App() {
           <div style={{ display: "grid", gap: 12, margin: "0 auto" }}>
             {MEETINGS.map(mt => {
               const best = bestSlots[mt.id];
+              const common = commonSlots[mt.id] || [];
               const sched = scheduled[mt.id];
               const conflict = sched && hasConflict(mt.id, sched.day, sched.slotId);
               return (
@@ -813,6 +868,31 @@ export default function App() {
                           );
                         })}
                       </div>
+
+                      {["TW", "Europe", "China", "JPKR", "USA"].includes(mt.id) && best.length === 0 && common.length > 0 && (
+                        <>
+                          <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "10px 0 6px" }}>
+                            Suggested common slots (top 2):
+                          </p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {common.map(({ day, slotId, availableCount, totalCount, unavailableMembers }) => {
+                              const dow = new Date(YEAR, MONTH, day).getDay();
+                              const dowL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow];
+                              return (
+                                <span
+                                  key={`${mt.id.toLowerCase()}-common-${day}-${slotId}`}
+                                  style={{ fontSize: 12, padding: "5px 12px", borderRadius: 16, border: `0.5px dashed ${mt.color}`, background: mt.bg, color: mt.color, whiteSpace: "pre-line" }}
+                                >
+                                  {MONTH + 1}/{day}（{dowL}）
+                                  {`\n${getAvailabilitySlotLabel(slotId, mt.id)}\n`}
+                                  ({availableCount}/{totalCount})
+                                  {unavailableMembers.length > 0 ? `\nNot available: ${unavailableMembers.join(", ")}` : ""}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
 
