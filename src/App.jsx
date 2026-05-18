@@ -634,12 +634,7 @@ export default function App() {
           />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <select 
-            value={selectedMonth} 
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
-            <option value={5}>June 2026</option>
-          </select>
+          <span style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500 }}>June 2026</span>
           <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
       </div>
