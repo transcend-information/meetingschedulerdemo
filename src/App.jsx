@@ -194,7 +194,7 @@ function initAvailability() {
 }
 
 export default function App() {
-  const [selectedMonth, setSelectedMonth] = useState(4); // 0-based month index, fixed to May
+  const [selectedMonth, setSelectedMonth] = useState(5); // 0-based month index, fixed to June
   const [tab, setTab] = useState("availability"); // availability | schedule | result
   const [activeMeeting, setActiveMeeting] = useState(null); // null = no team selected
   const [activeMember, setActiveMember] = useState(null);
@@ -638,7 +638,7 @@ export default function App() {
             value={selectedMonth} 
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
-            <option value={4}>June 2026</option>
+            <option value={5}>June 2026</option>
           </select>
           <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
