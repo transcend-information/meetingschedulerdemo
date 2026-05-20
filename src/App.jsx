@@ -108,7 +108,8 @@ const JPKR_HOLIDAYS_2026 = {
   3: [1, 20], // 3/1 Korea Independence Movement Day, 3/20 Japan Vernal Equinox Day
   4: [5, 29], // 4/5 Korea Buddha's Birthday, 4/29 Japan Showa Day
   5: [1, 3, 4, 5, 6], // 5/3-6 Japan Golden Week (Constitution Day, Greenery Day, Children's Day, substitute holiday), 5/5 Korea Children's Day
-  6: [6] // 6/6 Korea Memorial Day
+  6: [6], // 6/6 Korea Memorial Day
+  7: [20] // 7/20 Japan Marine Day (3rd Monday of July)
 };
 
 // Europe National Holidays 2026 (Germany, UK, Netherlands)
@@ -634,7 +635,12 @@ export default function App() {
           />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500 }}>June 2026</span>
+          <select value={selectedMonth} onChange={e => { setSelectedMonth(Number(e.target.value)); setSelectedDay(null); setSchedDay(null); }}
+            style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)", background: "var(--color-background-primary)", color: "var(--color-text-primary)", fontSize: 18, fontWeight: 500, cursor: "pointer", outline: "none" }}>
+            <option value={4}>May 2026</option>
+            <option value={5}>June 2026</option>
+            <option value={6}>July 2026</option>
+          </select>
           <span style={{ fontSize: 18, fontWeight: 500, color: "var(--color-text-primary)" }}>Transcend Branch Office Monthly Meeting Scheduler</span>
         </div>
       </div>

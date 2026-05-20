@@ -1,3 +1,50 @@
+# Meeting Scheduler Demo
+
+A collaborative meeting scheduler for a multinational organization with timezone complexity and regional holiday handling built in.
+
+## Project Overview
+
+**Stack:** React + Vite + Firebase Firestore
+
+Single-page app with 3 tabs:
+
+| Tab | Purpose | Access |
+|-----|---------|--------|
+| **Fill in available time slots** | Team members submit availability | Public |
+| **Monthly Meeting Overview** | View final calendar | Public |
+| **[FAD Zone] Schedule meetings** | Admin selects final meeting times | Password-protected |
+
+
+## Core Data Flow
+
+1. Member selects team → picks their name → picks dates on calendar
+2. `toggleSlot()` → updates state + auto-saves to Firebase
+3. `saveAvailability()` → locks member (can't re-edit)
+4. Admin → `bestSlots` computed from all members' availability
+5. `scheduleMeeting()` → writes final schedule to Firebase
+6. Tab 3 renders the calendar with all scheduled meetings
+
+## Key Functions
+
+| Function | What it does |
+|---------|-------------|
+| `toggleSlot()` | Toggle a time slot on/off, auto-saves to Firebase |
+| `saveAvailability()` | Lock member's submission |
+| `bestSlots` (useMemo) | Find slots where **all** members are free (no weekends/holidays) |
+| `commonSlots` (useMemo) | Fallback: top 2 slots by availability count when no perfect slot exists |
+| `hasConflict()` | Detect member overlap between meetings at same time |
+| `scheduleMeeting()` | Admin locks in a meeting time → saved to Firebase |
+
+## Business Logic
+
+- **5 regional teams**: China, JPKR, Europe, USA, TW
+- **Teri Chang** is a shared "swing member" factored into multiple teams' availability
+- **Timezone-aware**: each team sees slots in their local time (TPE, LA, MD, CEST, GMT)
+- **Holiday-aware**: region-specific 2026 holiday calendars exclude invalid dates
+- **Firebase collections**: `availability/{YEAR_MONTH}` and `scheduled/{YEAR_MONTH}`
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
